@@ -13,6 +13,7 @@ const ConnectionManager = require('./core/services/connectionManager');
 // Import modules
 const QueueModule = require('./modules/queue');
 const PrescriptionModule = require('./modules/prescription');
+const AdminModule = require('./modules/admin');
 
 class WebSocketServer {
     constructor() {
@@ -47,6 +48,10 @@ class WebSocketServer {
         // Register Prescription module
         const prescriptionModule = new PrescriptionModule(this.io, this.connectionManager);
         this.modules.set('prescription', prescriptionModule);
+
+        // Register Admin module
+        const adminModule = new AdminModule(this.io, this.connectionManager, this.broadcastService);
+        this.modules.set('admin', adminModule);
 
         logger.info(`📦 Initialized ${this.modules.size} modules: ${Array.from(this.modules.keys()).join(', ')}`);
     }
@@ -109,6 +114,29 @@ class WebSocketServer {
             // Global handlers
             socket.on('ping', () => {
                 socket.emit('pong', { timestamp: new Date().toISOString() });
+            });
+
+            // Handler for refresh all displays command
+            socket.on('refresh-all-displays', (data) => {
+                logger.info(`🔄 Received refresh-all-displays command from ${socket.id}`, data);
+                
+                // Broadcast refresh command to all display clients
+                const broadcastResult = this.broadcastService.broadcastToAllDisplays('refresh-all-displays', {
+                    action: 'refresh',
+                    timestamp: new Date().toISOString(),
+                    source: data?.source || 'admin-panel',
+                    ...data
+                });
+
+                // Send acknowledgment back to the sender
+                socket.emit('refresh-all-displays-ack', {
+                    success: true,
+                    message: 'Refresh command sent to all display clients',
+                    ...broadcastResult,
+                    timestamp: new Date().toISOString()
+                });
+
+                logger.info(`✅ Refresh command broadcasted successfully`, broadcastResult);
             });
 
             socket.on('disconnect', (reason) => {

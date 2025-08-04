@@ -43,6 +43,52 @@ class BroadcastService {
             channel, event, clientCount, roomName
         });
     }
+
+    broadcastToAllDisplays(event, data) {
+        // Get all room names that start with 'group_' (display rooms)
+        const allRooms = Array.from(this.io.sockets.adapter.rooms.keys());
+        const displayRooms = allRooms.filter(room => room.startsWith('group_'));
+        
+        let totalClientsReached = 0;
+        const broadcastResults = [];
+
+        displayRooms.forEach(roomName => {
+            const clientCount = getRoomClientCount(this.io, roomName);
+            if (clientCount > 0) {
+                this.io.to(roomName).emit(event, data);
+                totalClientsReached += clientCount;
+                broadcastResults.push({
+                    roomName,
+                    clientCount,
+                    broadcasted: true
+                });
+                logger.info(`📡 Broadcasted "${event}" to room "${roomName}" (${clientCount} clients)`);
+            } else {
+                broadcastResults.push({
+                    roomName,
+                    clientCount: 0,
+                    broadcasted: false
+                });
+            }
+        });
+
+        if (totalClientsReached === 0) {
+            logger.warn(`⚠️ No active display clients found for broadcast "${event}"`);
+        } else {
+            logger.info(`✅ Successfully broadcasted "${event}" to ${totalClientsReached} clients across ${displayRooms.length} display rooms`, {
+                event,
+                totalClientsReached,
+                displayRoomsCount: displayRooms.length,
+                broadcastResults
+            });
+        }
+
+        return {
+            totalClientsReached,
+            displayRoomsCount: displayRooms.length,
+            broadcastResults
+        };
+    }
 }
 
 module.exports = BroadcastService;
