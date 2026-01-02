@@ -11,7 +11,7 @@ const BroadcastService = require('./core/services/broadcast');
 const ConnectionManager = require('./core/services/connectionManager');
 
 // Import modules
-const QueueModule = require('./modules/queue');
+const AntrianPoliModule = require('./modules/antrianpoli');
 const PrescriptionModule = require('./modules/prescription');
 const AdminModule = require('./modules/admin');
 
@@ -41,9 +41,9 @@ class WebSocketServer {
     }
 
     initializeModules() {
-        // Register Queue module
-        const queueModule = new QueueModule(this.io, this.connectionManager);
-        this.modules.set('queue', queueModule);
+        // Register AntrianPoli module (formerly 'queue')
+        const antrianPoliModule = new AntrianPoliModule(this.io, this.connectionManager);
+        this.modules.set('antrianpoli', antrianPoliModule);
 
         // Register Prescription module
         const prescriptionModule = new PrescriptionModule(this.io, this.connectionManager);
@@ -70,6 +70,12 @@ class WebSocketServer {
                 logger.info(`🛣️ Registered routes for module: ${name}`);
             }
         });
+
+        // Backward-compatible alias: map /queue routes to antrianpoli module routes
+        if (this.modules.has('antrianpoli')) {
+            this.app.use('/queue', this.modules.get('antrianpoli').getRoutes());
+            logger.info('🛣️ Registered legacy alias routes: /queue -> /antrianpoli');
+        }
 
         // Global routes
         this.app.get('/health', (req, res) => {
@@ -116,28 +122,7 @@ class WebSocketServer {
                 socket.emit('pong', { timestamp: new Date().toISOString() });
             });
 
-            // Handler for refresh all displays command
-            socket.on('refresh-all-displays', (data) => {
-                logger.info(`🔄 Received refresh-all-displays command from ${socket.id}`, data);
-                
-                // Broadcast refresh command to all display clients
-                const broadcastResult = this.broadcastService.broadcastToAllDisplays('refresh-all-displays', {
-                    action: 'refresh',
-                    timestamp: new Date().toISOString(),
-                    source: data?.source || 'admin-panel',
-                    ...data
-                });
-
-                // Send acknowledgment back to the sender
-                socket.emit('refresh-all-displays-ack', {
-                    success: true,
-                    message: 'Refresh command sent to all display clients',
-                    ...broadcastResult,
-                    timestamp: new Date().toISOString()
-                });
-
-                logger.info(`✅ Refresh command broadcasted successfully`, broadcastResult);
-            });
+            // Note: refresh-all-displays is handled by AdminModule to avoid duplication
 
             socket.on('disconnect', (reason) => {
                 logger.info(`❌ Client disconnected: ${socket.id}`, { reason });

@@ -1,4 +1,14 @@
 const winston = require('winston');
+const fs = require('fs');
+
+// Ensure logs directory exists before initializing file transports
+try {
+	if (!fs.existsSync('logs')) {
+		fs.mkdirSync('logs', { recursive: true });
+	}
+} catch (e) {
+	// If directory creation fails, fallback to console-only logging
+}
 
 // Logger setup
 const logger = winston.createLogger({

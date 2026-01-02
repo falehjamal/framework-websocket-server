@@ -1,3 +1,4 @@
+require('dotenv').config();
 const WebSocketServer = require('./src/app');
 
 // Create and start the server
