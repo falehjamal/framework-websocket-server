@@ -46,21 +46,6 @@ class ConnectionManager {
         logger.info(`🗑️ Removed permalink for group ${groupIdStr}`);
     }
 
-    cleanupEmptyGroups() {
-        const allRooms = Array.from(this.io.sockets.adapter.rooms.keys());
-        const groupRooms = allRooms.filter(room => room.startsWith('group_'));
-        
-        groupRooms.forEach(roomName => {
-            const groupId = roomName.replace('group_', '');
-            const clientCount = getRoomClientCount(this.io, roomName);
-            if (clientCount === 0) {
-                const groupIdStr = String(groupId);
-                this.groupPermalinks.delete(groupIdStr);
-                logger.info(`🗑️ Cleaned up permalink for empty group ${groupIdStr}`);
-            }
-        });
-    }
-
     getActiveDisplays() {
         const allRooms = Array.from(this.io.sockets.adapter.rooms.keys());
         const groupRooms = allRooms.filter(room => room.startsWith('group_'));

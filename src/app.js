@@ -30,7 +30,7 @@ class WebSocketServer {
         // Initialize core services
         this.connectionManager = new ConnectionManager(this.io);
         this.broadcastService = new BroadcastService(this.io);
-        this.redisService = new RedisService(config, this.io, this.broadcastService);
+        this.redisService = new RedisService(config, this.broadcastService);
 
         // Initialize modules
         this.modules = new Map();
@@ -138,7 +138,6 @@ class WebSocketServer {
                     }
                 });
 
-                this.connectionManager.cleanupEmptyGroups();
                 this.connectionManager.removeConnection(socket.id);
             });
         });

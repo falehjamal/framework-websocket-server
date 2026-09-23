@@ -16,6 +16,7 @@ class AntrianPoliModule {
 		// Register antrianpoli-specific socket handlers
 		socket.on('join-group', (data) => this.handlers.handleJoinGroup(socket, data));
 		socket.on('leave-group', (data) => this.handlers.handleLeaveGroup(socket, data));
+		socket.on('disconnecting', () => this.handlers.handleDisconnecting(socket));
 	}
 
 	getRoutes() {

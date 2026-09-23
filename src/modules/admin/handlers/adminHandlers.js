@@ -43,8 +43,6 @@ class AdminHandlers {
                 message: error.message,
                 timestamp: new Date().toISOString()
             });
-
-            throw error;
         }
     }
 
@@ -96,8 +94,6 @@ class AdminHandlers {
                 message: error.message,
                 timestamp: new Date().toISOString()
             });
-
-            throw error;
         }
     }
 
@@ -126,8 +122,6 @@ class AdminHandlers {
                 message: error.message,
                 timestamp: new Date().toISOString()
             });
-
-            throw error;
         }
     }
 }
