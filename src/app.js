@@ -14,6 +14,7 @@ const ConnectionManager = require('./core/services/connectionManager');
 const AntrianPoliModule = require('./modules/antrianpoli');
 const PrescriptionModule = require('./modules/prescription');
 const AdminModule = require('./modules/admin');
+const NotificationModule = require('./modules/notification');
 
 class WebSocketServer {
     constructor() {
@@ -52,6 +53,9 @@ class WebSocketServer {
         // Register Admin module
         const adminModule = new AdminModule(this.io, this.connectionManager, this.broadcastService);
         this.modules.set('admin', adminModule);
+
+        const notificationModule = new NotificationModule(this.io, this.connectionManager);
+        this.modules.set('notification', notificationModule);
 
         logger.info(`📦 Initialized ${this.modules.size} modules: ${Array.from(this.modules.keys()).join(', ')}`);
     }
