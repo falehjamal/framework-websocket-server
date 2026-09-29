@@ -10,14 +10,18 @@ class BroadcastService {
         const roomName = `group_${groupId}`;
         const clientCount = getRoomClientCount(this.io, roomName);
 
+        logger.info(`🏠 Room: ${roomName} (${clientCount} clients)`);
+
         if (clientCount === 0) {
             logger.warn(`⚠️ No clients in room ${roomName}`);
             return;
         }
 
+        logger.info(`📡 Emitting "${event}" to room "${roomName}"`);
         this.io.to(roomName).emit(event, data);
-        logger.info(`Broadcast ${event} to ${roomName} (${clientCount} clients)`, {
-            channel, event, groupId, clientCount
+
+        logger.info(`✅ Broadcasted ${event} to ${clientCount} clients`, {
+            channel, event, groupId, clientCount, roomName
         });
     }
 
@@ -25,14 +29,18 @@ class BroadcastService {
         const roomName = 'prescription';
         const clientCount = getRoomClientCount(this.io, roomName);
 
+        logger.info(`💊 Prescription Room: ${roomName} (${clientCount} clients)`);
+
         if (clientCount === 0) {
             logger.warn(`⚠️ No clients in prescription room`);
             return;
         }
 
+        logger.info(`📡 Emitting prescription "${event}" to room "${roomName}"`);
         this.io.to(roomName).emit(`${channel}:${event}`, data);
-        logger.info(`Broadcast ${channel}:${event} to ${roomName} (${clientCount} clients)`, {
-            channel, event, clientCount
+
+        logger.info(`✅ Broadcasted prescription ${event} to ${clientCount} clients`, {
+            channel, event, clientCount, roomName
         });
     }
 
@@ -54,6 +62,7 @@ class BroadcastService {
                     clientCount,
                     broadcasted: true
                 });
+                logger.info(`📡 Broadcasted "${event}" to room "${roomName}" (${clientCount} clients)`);
             } else {
                 broadcastResults.push({
                     roomName,
@@ -66,12 +75,12 @@ class BroadcastService {
         if (totalClientsReached === 0) {
             logger.warn(`⚠️ No active display clients found for broadcast "${event}"`);
         } else {
-            logger.info(`Broadcast ${event} to ${totalClientsReached} clients across ${displayRooms.length} display rooms`, {
+            logger.info(`✅ Successfully broadcasted "${event}" to ${totalClientsReached} clients across ${displayRooms.length} display rooms`, {
                 event,
                 totalClientsReached,
-                displayRoomsCount: displayRooms.length
+                displayRoomsCount: displayRooms.length,
+                broadcastResults
             });
-            logger.debug('Display broadcast rooms', { event, broadcastResults });
         }
 
         return {

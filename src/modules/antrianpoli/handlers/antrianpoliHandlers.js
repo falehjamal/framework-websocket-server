@@ -7,14 +7,7 @@ class AntrianPoliHandlers {
 		this.connectionManager = connectionManager;
 	}
 
-	async leaveGroupRoom(socket, roomName) {
-		await socket.leave(roomName);
-		if (getRoomClientCount(this.io, roomName) === 0) {
-			this.connectionManager.removeGroupPermalink(roomName.replace('group_', ''));
-		}
-	}
-
-	async handleJoinGroup(socket, data) {
+	handleJoinGroup(socket, data) {
 		try {
 			const { groupId, groupName } = data || {};
 
@@ -32,15 +25,15 @@ class AntrianPoliHandlers {
 				logger.warn(`⚠️ No groupName provided for group ${groupId}`);
 			}
 
-			const previousRooms = [...socket.rooms];
-			for (const room of previousRooms) {
-				if (room !== socket.id && room.startsWith('group_') && room !== roomName) {
-					await this.leaveGroupRoom(socket, room);
+			// Leave previous group rooms
+			socket.rooms.forEach(room => {
+				if (room !== socket.id && room.startsWith('group_')) {
+					socket.leave(room);
 					logger.info(`🚪 Client ${socket.id} left room ${room}`);
 				}
-			}
+			});
 
-			await socket.join(roomName);
+			socket.join(roomName);
 			socket.emit('joined-group', {
 				groupId, groupName, roomName,
 				timestamp: createTimestamp()
@@ -54,13 +47,19 @@ class AntrianPoliHandlers {
 		}
 	}
 
-	async handleLeaveGroup(socket, data) {
+	handleLeaveGroup(socket, data) {
 		try {
 			const { groupId } = data || {};
 			const roomName = `group_${groupId}`;
 
-			await this.leaveGroupRoom(socket, roomName);
-
+			socket.leave(roomName);
+			
+			// Check if no more clients in this group, then remove permalink
+			const remainingClients = getRoomClientCount(this.io, roomName);
+			if (remainingClients === 0) {
+				this.connectionManager.removeGroupPermalink(groupId);
+			}
+			
 			socket.emit('left-group', {
 				groupId, roomName,
 				timestamp: createTimestamp()
@@ -74,15 +73,8 @@ class AntrianPoliHandlers {
 		}
 	}
 
-	handleDisconnecting(socket) {
-		for (const room of [...socket.rooms]) {
-			if (room !== socket.id && room.startsWith('group_') && getRoomClientCount(this.io, room) <= 1) {
-				this.connectionManager.removeGroupPermalink(room.replace('group_', ''));
-			}
-		}
-	}
-
 	handleDisconnection(socket) {
+		// Antrianpoli-specific cleanup on disconnection
 		logger.debug(`🏠 AntrianPoli module handling disconnection for ${socket.id}`);
 	}
 }

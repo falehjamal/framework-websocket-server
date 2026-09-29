@@ -15,7 +15,7 @@ class NotificationHandlers {
         this.connectionManager = connectionManager;
     }
 
-    async handleJoinNotification(socket, data) {
+    handleJoinNotification(socket, data) {
         try {
             const username = normalizeUsername(data && data.username);
             if (!username) {
@@ -24,12 +24,7 @@ class NotificationHandlers {
             }
 
             const roomName = roomNameFor(username);
-            const previousRoom = socket.data && socket.data.notificationRoom;
-            if (previousRoom && previousRoom !== roomName) {
-                await socket.leave(previousRoom);
-            }
-
-            await socket.join(roomName);
+            socket.join(roomName);
             socket.data.notificationRoom = roomName;
 
             socket.emit('notification-joined', {
@@ -47,12 +42,11 @@ class NotificationHandlers {
         }
     }
 
-    async handleLeaveNotification(socket) {
+    handleLeaveNotification(socket) {
         try {
             const roomName = socket.data && socket.data.notificationRoom;
             if (roomName) {
-                await socket.leave(roomName);
-                socket.data.notificationRoom = null;
+                socket.leave(roomName);
             }
 
             socket.emit('notification-left', {
