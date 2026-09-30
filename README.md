@@ -1,270 +1,68 @@
-# WebSocket Server - Modular Architecture
+# WebSocket Server
 
-WebSocket server yang telah direfactor dengan arsitektur modular untuk mendukung pengembangan fitur-fitur baru secara scalable dan maintainable.
+Server real-time berbasis Socket.io dan Express. Aplikasi (termasuk Laravel) mengirim event lewat Redis; server ini meneruskannya ke client yang sedang terhubung, misalnya layar antrian poli, farmasi, dan notifikasi.
 
-## 🚀 Fitur Utama
+Butuh Node.js dan Redis. Server default berjalan di port `6001`.
 
-- **Arsitektur Modular**: Setiap fitur dalam modul terpisah yang independen
-- **WebSocket Antrian Poli**: Sistem antrian dengan grouping dan broadcast
-- **Modul Prescription**: Sistem farmasi dengan room-based communication
-- **Auto Module Registration**: Modul baru otomatis terdaftar
-- **Scalable Structure**: Mudah menambah fitur baru tanpa mengubah core
-- **Comprehensive Logging**: Logging terpusat dengan level yang berbeda
-- **Redis Integration**: Support untuk Redis sebagai message broker
-- **Health Monitoring**: Health check endpoints untuk setiap modul
+## Fitur
 
-## 📁 Struktur Project
+- **Antrian poli.** Client masuk room per grup (`join-group` / `leave-group`). Event Redis di channel `antrian.*` di-broadcast ke grup yang sesuai. Route lama `/queue` tetap mengarah ke modul ini.
+- **Prescription.** Client bergabung ke room farmasi (`join-prescription` / `leave-prescription`). Event Redis yang namanya diawali `prescription.` dikirim ke room itu.
+- **Notifikasi.** Client masuk room berdasarkan username. HTTP `POST /notification/send` mengirim notifikasi ke user tersebut.
+- **Admin.** Melihat display yang aktif, menyuruh semua display refresh, dan mengirim broadcast ke layar.
+- **Redis.** Subscriber pola `antrian.*` dan `*`. Jika Redis tidak tersedia, server tetap jalan tanpa penerusan pesan.
+- **Monitoring.** `GET /health` untuk status server, `GET /displays/active` untuk display yang sedang terhubung.
+- **Log.** Error ditulis ke `logs/error.log`. Log `info` dan `warn` hanya tampil di console.
 
-```
-websocket-server-refactored/
-├── server.js                           # Entry point minimal
-├── package.json                        # Dependencies
-├── .env                                # Environment variables
-├── MODULE_DEVELOPMENT_GUIDE.md         # Panduan pengembangan modul
-├── logs/                               # Log files
-└── src/
-    ├── app.js                          # Main application
-    ├── core/                           # Core system components
-    │   ├── config/                     # Configuration management
-    │   ├── services/                   # Core services
-    │   └── utils/                      # Utility functions
-    ├── modules/                        # Feature modules
-    │   ├── queue/                      # WebSocket Antrian Poli
-    │   ├── prescription/               # Modul Prescription
-    │   └── template/                   # Template untuk modul baru
-    └── shared/                         # Shared utilities
-        ├── middleware/
-        └── types/
-```
+## Instalasi
 
-## 🛠️ Installation
-
-1. **Clone Repository**:
-   ```bash
-   git clone <repository-url>
-   cd websocket-server-refactored
-   ```
-
-2. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
-
-3. **Setup Environment**:
-   ```bash
-   cp env.example .env
-   # Edit .env file sesuai kebutuhan
-   ```
-
-4. **Start Server**:
-   ```bash
-   npm start
-   ```
-
-## 🔧 Configuration
-
-Konfigurasi utama dapat diatur melalui environment variables di file `.env`:
+1. Pastikan Node.js dan Redis sudah terpasang dan Redis berjalan.
+2. Masuk ke folder proyek, lalu pasang dependency:
 
 ```bash
-# Server Configuration
-PORT=3000
-NODE_ENV=development
-
-# CORS Configuration
-CORS_ORIGIN=*
-CORS_METHODS=GET,POST,PUT,DELETE
-CORS_CREDENTIALS=true
-
-# Redis Configuration (optional)
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=
-
+npm install
 ```
 
-## 📡 API Endpoints
-
-### Global Endpoints
-
-- `GET /health` - Health check untuk semua modul
-- `GET /displays/active` - Daftar display aktif
-
-### Queue Module
-
-- `GET /queue/groups/active` - Daftar grup antrian aktif
-- `GET /queue/groups/:groupId` - Info grup antrian spesifik
-
-### Prescription Module
-
-- `GET /prescription/active` - Koneksi prescription aktif
-- `POST /prescription/broadcast` - Broadcast ke semua client prescription
-
-## 🔌 WebSocket Events
-
-### Queue Module Events
-
-**Client to Server:**
-- `join-group` - Join ke grup antrian
-- `leave-group` - Leave grup antrian
-
-**Server to Client:**
-- `joined-group` - Konfirmasi join grup
-- `left-group` - Konfirmasi leave grup
-
-### Prescription Module Events
-
-**Client to Server:**
-- `join-prescription` - Join ke room prescription
-- `leave-prescription` - Leave room prescription
-
-**Server to Client:**
-- `prescription-joined` - Konfirmasi join prescription
-- `prescription-left` - Konfirmasi leave prescription
-- `prescription-broadcast` - Broadcast message
-
-### Global Events
-
-- `ping` / `pong` - Heartbeat
-- `error` - Error notifications
-
-## 🧩 Menambahkan Modul Baru
-
-Untuk menambahkan modul baru, ikuti langkah-langkah di [MODULE_DEVELOPMENT_GUIDE.md](./MODULE_DEVELOPMENT_GUIDE.md).
-
-### Quick Start
-
-1. **Copy Template**:
-   ```bash
-   cp -r src/modules/template src/modules/your-module
-   ```
-
-2. **Update Module Name** di semua file
-
-3. **Register Module** di `src/app.js`:
-   ```javascript
-   const YourModule = require('./modules/your-module');
-   
-   // In initializeModules()
-   const yourModule = new YourModule(this.io, this.connectionManager);
-   this.modules.set('your-module', yourModule);
-   ```
-
-4. **Test Module**:
-   ```bash
-   curl http://localhost:3000/your-module/status
-   ```
-
-## 🧪 Testing
-
-### Unit Tests
-```bash
-npm test
-```
-
-### Integration Tests
-```bash
-npm run test:integration
-```
-
-### Manual Testing
-```bash
-# Test WebSocket connection
-npm run test:socket
-
-# Test HTTP endpoints
-npm run test:api
-```
-
-## 📊 Monitoring
-
-### Health Checks
-
-Setiap modul memiliki health check endpoint:
+3. Salin environment:
 
 ```bash
-# Global health check
-curl http://localhost:3000/health
-
-# Module-specific health check
-curl http://localhost:3000/queue/status
-curl http://localhost:3000/prescription/active
+cp env.example .env
 ```
 
-### Logging
+Isi `.env` yang dibaca server:
 
-Log error tersimpan di `logs/error.log`. Log `info` dan `warn` hanya tampil di console.
-
-## 🚀 Deployment
-
-### Development
 ```bash
-npm run dev
+SOCKETIO_PORT=6001
+REDIS_URL=redis://127.0.0.1:6379/0
 ```
 
-### Production
+4. Jalankan server:
+
 ```bash
 npm start
 ```
 
-### Docker
-```bash
-# Build image
-docker build -t websocket-server .
+Cek server:
 
-# Run container
-docker run -p 3000:3000 websocket-server
+```bash
+curl http://localhost:6001/health
 ```
 
-### Docker Compose
-```bash
-docker-compose up -d
-```
+Client Socket.io terhubung ke `http://localhost:6001` (transport `websocket` dan `polling`).
 
-## 🤝 Contributing
+## Endpoint singkat
 
-1. Fork repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
+- `GET /health` — status server dan daftar modul
+- `GET /displays/active` — display yang sedang terhubung
+- `GET /antrianpoli/groups/active` — grup antrian yang punya client
+- `GET /antrianpoli/groups/:groupId` — info satu grup
+- `GET /prescription/active` — client di room prescription
+- `POST /prescription/broadcast` — kirim event ke room prescription
+- `POST /notification/send` — kirim notifikasi (`username`, `title`, `message`)
+- `GET /notification/active-users` — user notifikasi yang sedang online
+- `GET /admin/displays/active` — display aktif
+- `POST /admin/displays/refresh` — refresh semua display
+- `POST /admin/displays/broadcast` — broadcast pesan ke display
+- `GET /admin/system/stats` — statistik koneksi
 
-### Development Guidelines
-
-- Ikuti struktur modular yang sudah ada
-- Tambahkan tests untuk fitur baru
-- Update dokumentasi
-- Gunakan logging yang konsisten
-- Implementasikan error handling yang proper
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-Jika ada pertanyaan atau masalah:
-
-1. Baca [MODULE_DEVELOPMENT_GUIDE.md](./MODULE_DEVELOPMENT_GUIDE.md)
-2. Check existing issues
-3. Create new issue dengan detail yang lengkap
-
-## 🔄 Migration dari Versi Lama
-
-Jika Anda memiliki WebSocket server versi lama, ikuti panduan migrasi:
-
-1. **Backup Data**: Backup semua data dan konfigurasi
-2. **Update Dependencies**: Update package.json
-3. **Migrate Handlers**: Pindahkan socket handlers ke modul yang sesuai
-4. **Update Client Code**: Update client untuk menggunakan event names yang baru
-5. **Test Thoroughly**: Test semua functionality sebelum production
-
-## 📈 Roadmap
-
-- [ ] Add authentication middleware
-- [ ] Implement rate limiting
-- [ ] Add database integration
-- [ ] Create admin dashboard
-- [ ] Add metrics and analytics
-- [ ] Implement clustering support
-- [ ] Add automated testing pipeline
-
+Route antrian yang sama juga tersedia di prefix `/queue`.
