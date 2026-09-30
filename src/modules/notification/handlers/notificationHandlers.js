@@ -5,6 +5,10 @@ function normalizeUsername(username) {
     return String(username || '').trim().toLowerCase();
 }
 
+function normalizePath(path) {
+    return String(path || '').split('?')[0].split('#')[0].trim().toLowerCase();
+}
+
 function roomNameFor(username) {
     return `notif_user_${normalizeUsername(username)}`;
 }
@@ -26,6 +30,8 @@ class NotificationHandlers {
             const roomName = roomNameFor(username);
             socket.join(roomName);
             socket.data.notificationRoom = roomName;
+            socket.data.username = username;
+            socket.data.path = normalizePath(data && data.path);
 
             socket.emit('notification-joined', {
                 message: 'Berhasil join room notifikasi',
@@ -48,6 +54,10 @@ class NotificationHandlers {
             if (roomName) {
                 socket.leave(roomName);
             }
+            if (socket.data) {
+                delete socket.data.username;
+                delete socket.data.path;
+            }
 
             socket.emit('notification-left', {
                 message: 'Berhasil leave room notifikasi',
@@ -68,4 +78,5 @@ class NotificationHandlers {
 
 module.exports = NotificationHandlers;
 module.exports.normalizeUsername = normalizeUsername;
+module.exports.normalizePath = normalizePath;
 module.exports.roomNameFor = roomNameFor;
