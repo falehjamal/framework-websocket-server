@@ -80,9 +80,6 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_PASSWORD=
 
-# Logging Configuration
-LOG_LEVEL=info
-LOG_FILE=logs/combined.log
 ```
 
 ## 📡 API Endpoints
@@ -195,11 +192,7 @@ curl http://localhost:3000/prescription/active
 
 ### Logging
 
-Log tersimpan di folder `logs/`:
-- `combined.log` - Semua log
-- `error.log` - Error log saja
-
-Level logging dapat diatur via `LOG_LEVEL` environment variable.
+Log error tersimpan di `logs/error.log`. Log `info` dan `warn` hanya tampil di console.
 
 ## 🚀 Deployment
 
