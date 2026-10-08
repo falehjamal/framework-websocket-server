@@ -1,5 +1,6 @@
 const express = require('express');
 const logger = require('../../core/services/logger');
+const UserDirectory = require('./userDirectory');
 
 const PRESENCE_EVENTS = [
     'join-notification',
@@ -16,12 +17,13 @@ class MonitoringModule {
     constructor(io, connectionManager) {
         this.io = io;
         this.connectionManager = connectionManager;
+        this.userDirectory = new UserDirectory();
         this.timer = null;
         this.router = express.Router();
         this.router.get('/clients', async (req, res) => {
             try {
-                const snapshot = await this.connectionManager.buildMonitoringSnapshot();
-                res.json({ success: true, ...snapshot });
+                const payload = await this.buildPayload();
+                res.json({ success: true, ...payload });
             } catch (error) {
                 logger.error('Error building monitoring snapshot:', error);
                 res.status(500).json({
@@ -39,6 +41,13 @@ class MonitoringModule {
         socket.on('join-monitoring', () => {
             socket.join('monitoring');
             socket.data.monitoring = true;
+            this.schedule();
+        });
+
+        socket.on('monitoring:refresh', () => {
+            if (!socket.data || !socket.data.monitoring) {
+                return;
+            }
             this.schedule();
         });
 
@@ -65,14 +74,19 @@ class MonitoringModule {
                 return;
             }
 
-            const snapshot = await this.connectionManager.buildMonitoringSnapshot();
+            const payload = await this.buildPayload();
             this.io.to('monitoring').emit('monitoring:update', {
                 success: true,
-                ...snapshot
+                ...payload
             });
         } catch (error) {
             logger.error('Error pushing monitoring snapshot:', error);
         }
+    }
+
+    async buildPayload() {
+        const snapshot = await this.connectionManager.buildMonitoringSnapshot();
+        return this.userDirectory.enrich(snapshot);
     }
 
     getRoutes() {
@@ -88,6 +102,7 @@ class MonitoringModule {
             clearTimeout(this.timer);
             this.timer = null;
         }
+        await this.userDirectory.shutdown();
         logger.info('Monitoring module shutting down');
     }
 }
