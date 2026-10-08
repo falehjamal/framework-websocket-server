@@ -34,6 +34,9 @@ class AntrianPoliHandlers {
 			});
 
 			socket.join(roomName);
+			socket.data.displayUrl = (data && data.url) || null;
+			socket.data.displaySlug = (data && data.display) || null;
+			socket.data.displayRegistered = false;
 			socket.emit('joined-group', {
 				groupId, groupName, roomName,
 				timestamp: createTimestamp()
@@ -70,6 +73,24 @@ class AntrianPoliHandlers {
 		} catch (error) {
 			logger.error('❌ Error handling leave-group:', error);
 			socket.emit('error', { message: 'Failed to leave group' });
+		}
+	}
+
+	handleRegisterDisplay(socket, data) {
+		try {
+			const info = data || {};
+			socket.data.displayRegistered = true;
+			socket.data.displayUrl = info.url || null;
+			socket.data.displaySlug = info.display || null;
+			socket.emit('display-registered', {
+				display: socket.data.displaySlug,
+				url: socket.data.displayUrl,
+				timestamp: createTimestamp()
+			});
+			logger.info(`📺 Client ${socket.id} registered display ${socket.data.displaySlug || '-'}`);
+		} catch (error) {
+			logger.error('❌ Error handling register-display:', error);
+			socket.emit('error', { message: 'Failed to register display' });
 		}
 	}
 

@@ -11,7 +11,7 @@ Butuh Node.js dan Redis. Server default berjalan di port `6001`.
 - **Notifikasi.** Client masuk room berdasarkan username. HTTP `POST /notification/send` mengirim notifikasi ke user tersebut.
 - **Admin.** Melihat display yang aktif, menyuruh semua display refresh, dan mengirim broadcast ke layar.
 - **Redis.** Subscriber pola `antrian.*` dan `*`. Jika Redis tidak tersedia, server tetap jalan tanpa penerusan pesan.
-- **Monitoring.** `GET /health` untuk status server, `GET /displays/active` untuk display yang sedang terhubung.
+- **Monitoring.** `GET /health` untuk status server, `GET /displays/active` untuk display yang sedang terhubung, `GET /monitoring/clients` untuk snapshot notifikasi, resep, dan display. Client di room `monitoring` menerima event `monitoring:update` saat ada yang join atau leave.
 - **Log.** Error ditulis ke `logs/error.log`. Log `info` dan `warn` hanya tampil di console.
 
 ## Instalasi
@@ -64,5 +64,6 @@ Client Socket.io terhubung ke `http://localhost:6001` (transport `websocket` dan
 - `POST /admin/displays/refresh` — refresh semua display
 - `POST /admin/displays/broadcast` — broadcast pesan ke display
 - `GET /admin/system/stats` — statistik koneksi
+- `GET /monitoring/clients` — snapshot klien notifikasi, resep, dan display antrian
 
 Route antrian yang sama juga tersedia di prefix `/queue`.

@@ -14,6 +14,7 @@ class PrescriptionModule {
 
     registerSocketHandlers(socket) {
         // Register prescription-specific socket handlers
+        socket.on('join-user-room', (data) => this.handlers.handleJoinUserRoom(socket, data));
         socket.on('join-prescription', () => this.handlers.handleJoinPrescription(socket));
         socket.on('leave-prescription', () => this.handlers.handleLeavePrescription(socket));
     }

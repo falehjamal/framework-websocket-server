@@ -7,6 +7,21 @@ class PrescriptionHandlers {
         this.connectionManager = connectionManager;
     }
 
+    handleJoinUserRoom(socket, data) {
+        try {
+            const raw = typeof data === 'string' ? data : (data && (data.username || data.user));
+            const username = String(raw || '').trim().toLowerCase();
+            if (!username) {
+                return;
+            }
+
+            socket.data.prescriptionUsername = username;
+            logger.info(`💊 Client ${socket.id} identified as ${username} for prescription`);
+        } catch (error) {
+            logger.error('❌ Error handling join-user-room:', error);
+        }
+    }
+
     handleJoinPrescription(socket) {
         try {
             const roomName = 'prescription';

@@ -15,6 +15,7 @@ const AntrianPoliModule = require('./modules/antrianpoli');
 const PrescriptionModule = require('./modules/prescription');
 const AdminModule = require('./modules/admin');
 const NotificationModule = require('./modules/notification');
+const MonitoringModule = require('./modules/monitoring');
 
 class WebSocketServer {
     constructor() {
@@ -56,6 +57,9 @@ class WebSocketServer {
 
         const notificationModule = new NotificationModule(this.io, this.connectionManager);
         this.modules.set('notification', notificationModule);
+
+        const monitoringModule = new MonitoringModule(this.io, this.connectionManager);
+        this.modules.set('monitoring', monitoringModule);
 
         logger.info(`📦 Initialized ${this.modules.size} modules: ${Array.from(this.modules.keys()).join(', ')}`);
     }
@@ -159,6 +163,7 @@ class WebSocketServer {
             this.server.listen(this.config.port, '0.0.0.0', () => {
                 logger.info(`🔥 Universal WebSocket server running on port ${this.config.port}`);
                 logger.info(`🖥️ Active displays: GET http://localhost:${this.config.port}/displays/active`);
+                logger.info(`👀 Monitoring clients: GET http://localhost:${this.config.port}/monitoring/clients`);
                 logger.info(`💚 Health check: GET http://localhost:${this.config.port}/health`);
             });
 

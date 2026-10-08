@@ -100,6 +100,80 @@ class ConnectionManager {
 
         return activeDisplays;
     }
+
+    async buildMonitoringSnapshot() {
+        const sockets = await this.io.fetchSockets();
+        const notifications = [];
+        const prescriptions = [];
+        const displays = [];
+
+        for (const socket of sockets) {
+            const connection = this.activeConnections.get(socket.id);
+            const base = {
+                socketId: socket.id,
+                connectedAt: connection ? connection.connectedAt : null,
+                ipAddress: cleanIp(connection && connection.ipAddress)
+            };
+            const data = socket.data || {};
+            const rooms = socket.rooms || new Set();
+
+            if (data.notificationRoom && data.username && rooms.has(data.notificationRoom)) {
+                notifications.push({
+                    ...base,
+                    username: data.username,
+                    path: data.path || ''
+                });
+            }
+
+            if (rooms.has('prescription')) {
+                prescriptions.push({
+                    ...base,
+                    username: data.prescriptionUsername || null
+                });
+            }
+
+            let inGroup = false;
+            for (const room of rooms) {
+                if (!room.startsWith('group_')) {
+                    continue;
+                }
+                inGroup = true;
+                const groupId = room.slice('group_'.length);
+                displays.push({
+                    ...base,
+                    groupId,
+                    groupName: this.getGroupPermalink(groupId) || null,
+                    url: data.displayUrl || null,
+                    slug: data.displaySlug || null
+                });
+            }
+
+            if (!inGroup && data.displayRegistered) {
+                displays.push({
+                    ...base,
+                    groupId: null,
+                    groupName: null,
+                    url: data.displayUrl || null,
+                    slug: data.displaySlug || null
+                });
+            }
+        }
+
+        notifications.sort((a, b) => `${a.username}|${a.path}`.localeCompare(`${b.username}|${b.path}`));
+        prescriptions.sort((a, b) => String(a.username || '').localeCompare(String(b.username || '')));
+        displays.sort((a, b) => String(a.groupName || a.slug || '').localeCompare(String(b.groupName || b.slug || '')));
+
+        return {
+            notifications,
+            prescriptions,
+            displays,
+            timestamp: createTimestamp()
+        };
+    }
+}
+
+function cleanIp(ipAddress) {
+    return String(ipAddress || '').replace(/^::ffff:/, '');
 }
 
 module.exports = ConnectionManager;
